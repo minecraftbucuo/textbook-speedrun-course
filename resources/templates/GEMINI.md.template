@@ -1,0 +1,69 @@
+# {COURSE_NAME} · 项目制作规范与用户偏好
+
+> 本文件位于仓库根目录，每次新开对话都会被 AI 自动加载。制作任何新集或修改旧集前，**必须逐条严格遵守以下用户偏好与技术红线**。
+> 教材文件：`{BOOK_FILENAME}`（PDF 页码 = 教材页码 + `{PAGE_OFFSET}`）
+
+---
+
+## 一、本项目课程偏好（初始化问答已确认）
+
+| 配置项 | 当前选择 |
+| :--- | :--- |
+| **教学风格与比例** | {TEACHING_STYLE} |
+| **口播语气与风格** | {NARRATION_TONE} |
+| **配音音色与语速** | `voice: "{VOICE}"`，`rate: "{RATE}"` |
+| **分集粒度与时长** | {PACING_RULE} |
+| **教材依赖与题干模式** | {STANDALONE_MODE} |
+| **出片画质与帧率** | {VIDEO_QUALITY} |
+
+### 用户补充的个性化要求
+{CUSTOM_REQUIREMENTS}
+
+---
+
+## 二、核心教学与动画质量底线
+
+1. **严格遵循上方教学与题干模式**：
+   - 若为「独立成课」模式：每道例题必须同时写出教材题号标签与**100% 完整原题干**（问什么 + 全部已知条件、数值、变量范围），定义与定理写全前提条件与结论。
+2. **例题与难点必须分步动态演算（严禁画面静止干读）**：
+   - 口播讲到推导、消元、代入、计算步骤时，画面必须用 `self.pace_to(seg, frac)` 与口播一一同步动起来，逐行/逐卡片写出中间过程与结果。
+   - **先具体、再抽象**：高阶/抽象定理或公式先用低阶具体数值例子演示，再推广到一般形式。
+3. **开场规范（仅每章第一集放全书进度路线图）**：
+   - 每章第一集开场展示全书章节路线图：`make_knowledge_map(BOOK_CHAPTERS, highlight_idx=章序号)`（0-based）。
+   - 章内其余各集使用「干净封面标题 + 核心概念对比卡」，不再重复展示全书路线图。
+
+---
+
+## 三、配音、字幕与技术红线
+
+1. **100% 逐字同步字幕**：`script.json` 中只写 `text` 字段，不写缩写 `subtitle`。
+2. **防 TTS 粘连与错断句**：列举数字用顿号 `、` 分隔（如 `1、0、0`）；长主语或长列举后补逗号引导换气；普通段落 `pause_after: 0.45`，片尾总结 `pause_after: 0.6`。
+3. **背景与安全区**：`self.add(make_studio_backdrop())`；顶栏 `y ∈ [3.24, 3.95]`、底部字幕 `y ∈ [-4.0, -3.10]`；正文严格控制在 `x ∈ [-6.4, +6.4]`、`y ∈ [-2.85, +2.95]`。
+4. **音画同步与清屏铁律**：继承 `SyncedScene`，用 `self.pace_to(seg, frac)` 踩准口播节奏；每次 `self.clear_stage(...)` 之前必须调用 `self.pace_to(seg, 0.995)`。
+5. **防缺字方块（Tofu `□□`）**：严禁在 `zh_text(...)` 或 `make_badge(...)` 中使用 Unicode 数学上下标或生僻符号（如 `₀₁₂₃ₘᵀ ⇏ ①②③`）；含公式/上下标的中英混排一律用 `zh_tex(...)`。
+6. **LaTeX 宏包限制**：`math_tex` 不含 `xeCJK`（中文混排用 `zh_tex`）；仅加载 `amsmath` 与 `amssymb`（严禁 `\xRightarrow`、`\iddots`，统一用 `\xrightarrow`）。
+
+---
+
+## 四、标准制作与质检流水线
+
+1. **读教材原页**：`python scripts\read_pdf.py "{BOOK_FILENAME}" --pages <起>-<止> --offset {PAGE_OFFSET}`
+2. **产出文件**：`episodes/epXX_c_s_slug/` 下编写 `output/EPXX_c-s_速通笔记.md`、`script.json`、`scene.py`。
+3. **生成配音**：`python scripts\tts_gen.py episodes\epXX_c_s_slug`
+4. **480p 预演 + 全帧质检（不可跳过）**：
+   - `python scripts\build_ep.py episodes\epXX_c_s_slug --quality l --skip-tts`（确认 0 条 `[SYNC WARNING]`）
+   - `python scripts\extract_preview.py episodes\epXX_c_s_slug`
+   - 逐张用 `read_file` 核查 `build/preview_frames/*.png`（题干完整、动态演算、无 `□□`、无重叠越界）。
+5. **最终出片与复核**：
+   - `python scripts\build_ep.py episodes\epXX_c_s_slug --quality {QUALITY_FLAG} --skip-tts`
+   - 确认 0 条 `[SYNC WARNING]`、`ffprobe` 校验分辨率、帧率与时长，复核修改页成片帧。
+6. **目录隔离与 Git 卫生**：所有缓存/抽帧/成片留在仓库内；Git 仅提交 `script.json`、`scene.py`、`output/*.md`、`output/*.srt` 与文档，绝不提交 `.mp4/.wav/.mp3/.png/.pdf` 或 `build/`。
+
+---
+
+## 五、全书剧集映射表（请根据教材目录完善）
+
+<!-- 在此填入本书的 EP01 ~ EPNN 章节映射与完成进度 -->
+| 集数 | 目录名 | 章节标题 | 教材页码 | 状态 |
+| :--- | :--- | :--- | :--- | :--- |
+| **EP01** | `ep01_1_1_slug` | 1-1 示例章节（第一章开篇，放全书路线图 `highlight_idx=0`） | p.1–10 | 待制作 |

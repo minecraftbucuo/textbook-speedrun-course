@@ -1,0 +1,30 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Generated build artifacts, Manim caches, TTS audio & temp files
+episodes/*/build/
+media/
+tmp/
+temp/
+
+# Large binary media & reference textbook PDF
+*.mp4
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.pdf
+*.png
+*.jpg
+*.jpeg
+
+# OS & Editor clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
